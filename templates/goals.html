@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Définir les objectifs quotidiens</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Définir les objectifs quotidiens</h1>
+        <form method="post">
+            {% for day, goal in goals.items() %}
+                <h3>{{ day }}</h3>
+                <div class="form-group">
+                    <label for="{{ day }}_protein">Protéines (g)</label>
+                    <input type="number" class="form-control" id="{{ day }}_protein" name="{{ day }}_protein" step="0.01" value="{{ goal.protein if goal else 0 }}">
+                </div>
+                <div class="form-group">
+                    <label for="{{ day }}_carbohydrates">Glucides (g)</label>
+                    <input type="number" class="form-control" id="{{ day }}_carbohydrates" name="{{ day }}_carbohydrates" step="0.01" value="{{ goal.carbohydrates if goal else 0 }}">
+                </div>
+                <div class="form-group">
+                    <label for="{{ day }}_fat">Lipides (g)</label>
+                    <input type="number" class="form-control" id="{{ day }}_fat" name="{{ day }}_fat" step="0.01" value="{{ goal.fat if goal else 0 }}">
+                </div>
+                <hr>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </form>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Retour à l'accueil</a>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

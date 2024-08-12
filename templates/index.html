@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Nutrition Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Nutrition Tracker</h1>
+        <form method="post" action="{{ url_for('add_food') }}" class="form-inline mb-4">
+            <div class="form-group mr-2">
+                <label for="food_name" class="sr-only">Nom de l'aliment</label>
+                <input type="text" class="form-control" id="food_name" name="food_name" placeholder="Nom de l'aliment" required>
+            </div>
+            <div class="form-group mr-2">
+                <label for="servings" class="sr-only">Portions</label>
+                <input type="number" class="form-control" id="servings" name="servings" min="1" value="1" required>
+            </div>
+            <button type="submit" class="btn btn-primary mb-2">Ajouter</button>
+        </form>
+        {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        {% endif %}
+        <h2>Calories consommées aujourd'hui :</h2>
+        <ul class="list-group mb-4">
+            {% for food in daily_calories %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        <strong>{{ food.name }}</strong>: {{ food.calories }} kcal, {{ food.protein }} g protéines, {{ food.carbohydrates }} g glucides, {{ food.fat }} g lipides
+                    </span>
+                    <form method="post" action="{{ url_for('delete_food', id=food.id) }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+        <p>Total: {{ daily_calories_sum }} kcal</p>
+        <h2>Calories consommées cette semaine :</h2>
+        <p>{{ weekly_calories }} kcal</p>
+        <h2>Objectif quotidien</h2>
+        {% if daily_goal %}
+        <ul class="list-group mb-4">
+            <li class="list-group-item">Protéines : {{ daily_goal.protein | round(2) }} g | Restant : {{ remaining_goal.protein | round(2) }} g</li>
+            <li class="list-group-item">Glucides : {{ daily_goal.carbohydrates | round(2) }} g | Restant : {{ remaining_goal.carbohydrates | round(2) }} g</li>
+            <li class="list-group-item">Lipides : {{ daily_goal.fat | round(2) }} g | Restant : {{ remaining_goal.fat | round(2) }} g</li>
+        </ul>
+        {% else %}
+        <p>Aucun objectif défini pour aujourd'hui.</p>
+        {% endif %}
+        <a href="{{ url_for('history') }}" class="btn btn-secondary">Voir l'historique des aliments ajoutés</a>
+        <a href="{{ url_for('goals') }}" class="btn btn-secondary">Définir l'objectif quotidien</a>
+        <a href="{{ url_for('calculate_calories') }}" class="btn btn-secondary">Calculer les Calories</a>
+        <a href="{{ url_for('calculate_tonnage', category='PUSH', day_of_week='Monday') }}" class="btn btn-secondary">Calculer le tonnage</a>
+        <a href="{{ url_for('chart_data') }}" class="btn btn-secondary">Voir le graphique</a>
+
+        <h2>Graphiques des consommations</h2>
+        <canvas id="caloriesChart" width="400" height="200"></canvas>
+        <canvas id="macrosChart" width="400" height="200"></canvas>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $.getJSON("{{ url_for('chart_data') }}", function(data) {
+                console.log(data); // Ajoutez ceci pour vérifier les données dans la console
+                var ctxCalories = document.getElementById('caloriesChart').getContext('2d');
+                var caloriesChart = new Chart(ctxCalories, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Calories',
+                            data: data.calories,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                },
+                                adapters: {
+                                    date: {
+                                        type: 'moment'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                var ctxMacros = document.getElementById('macrosChart').getContext('2d');
+                var macrosChart = new Chart(ctxMacros, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Protéines',
+                                data: data.protein,
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Glucides',
+                                data: data.carbohydrates,
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Lipides',
+                                data: data.fat,
+                                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                                borderColor: 'rgba(255, 206, 86, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                },
+                                adapters: {
+                                    date: {
+                                        type: 'moment'
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }).fail(function(jqxhr, textStatus, error) {
+                console.error("Request Failed: " + textStatus + ", " + error);
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
